@@ -107,7 +107,7 @@ function HomePage() {
               <span><span className="font-bold text-emerald-400">A</span> — 良い・多少の課題はあっても前向きに検討</span>
               <span><span className="font-bold text-blue-400">B</span> — どちらでもいい・意味がわからない・興味がない</span>
               <span><span className="font-bold text-orange-400">C</span> — やめたほうがいい・本人の問題・無理</span>
-              <span><span className="font-bold text-red-400">X</span> — 所属部署の問題では？技術開発室でやることではない（該当部署に報告を検討）</span>
+              <span><span className="font-bold text-red-400">X</span> — 所属部署の問題では？技術開発室でやることではない</span>
             </div>
           </div>
         </div>

@@ -35,5 +35,5 @@ export const RATING_LABELS: Record<Rating, { label: string; description: string;
   A: { label: 'A', description: '良い・多少の課題はあっても前向きに検討', color: 'rating-a' },
   B: { label: 'B', description: 'どちらでもいい・意味がわからない・興味がない', color: 'rating-b' },
   C: { label: 'C', description: 'やめたほうがいい・本人の問題・無理', color: 'rating-c' },
-  X: { label: 'X', description: '所属部署の問題では？技術開発室でやることではない（該当部署に報告を検討）', color: 'rating-x' },
+  X: { label: 'X', description: '所属部署の問題では？技術開発室でやることではない', color: 'rating-x' },
 }
