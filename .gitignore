@@ -37,6 +37,9 @@ yarn-error.log*
 # scripts build output
 /dist-scripts
 
+# Excelデータファイル (Supabaseにインポート済み)
+*.xlsx
+
 # vercel
 .vercel
 
