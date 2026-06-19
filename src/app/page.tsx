@@ -85,7 +85,7 @@ function HomePage() {
               <span className="text-2xl">📋</span>
             </div>
             <h1 className="text-3xl font-black tracking-tight">アンケート審査</h1>
-            <p className="text-gray-400 text-sm">技術開発部 — 社員アンケート結果審査</p>
+            <p className="text-gray-400 text-sm">技術開発室 — 社員アンケート結果審査</p>
           </div>
 
           <div className="bg-gray-900 rounded-3xl border border-gray-800 p-8 space-y-6">

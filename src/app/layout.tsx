@@ -6,7 +6,7 @@ const geist = Geist({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'アンケート結果審査シート',
-  description: '技術開発部 - 社員アンケート結果審査ツール',
+  description: '技術開発室 - 社員アンケート結果審査ツール',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
