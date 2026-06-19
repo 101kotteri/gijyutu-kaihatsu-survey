@@ -103,11 +103,11 @@ function HomePage() {
           <div className="bg-gray-900/50 rounded-2xl border border-gray-800 p-4 space-y-2">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">評価基準</p>
             <div className="grid grid-cols-1 gap-1 text-xs text-gray-400">
-              <span><span className="font-bold text-yellow-400">S</span> — 是非取り組みたい・自分1人でも実現したい</span>
-              <span><span className="font-bold text-emerald-400">A</span> — 良い・前向きに検討</span>
-              <span><span className="font-bold text-blue-400">B</span> — どちらでもいい・興味がない</span>
-              <span><span className="font-bold text-orange-400">C</span> — やめたほうがいい・無理</span>
-              <span><span className="font-bold text-red-400">X</span> — 他部署の課題・技術開発でやることではない</span>
+              <span><span className="font-bold text-yellow-400">S</span> — 是非実現したい・自分1人でも取り組みたい・採用決定</span>
+              <span><span className="font-bold text-emerald-400">A</span> — 良い・多少の課題はあっても前向きに検討</span>
+              <span><span className="font-bold text-blue-400">B</span> — どちらでもいい・意味がわからない・興味がない</span>
+              <span><span className="font-bold text-orange-400">C</span> — やめたほうがいい・本人の問題・無理</span>
+              <span><span className="font-bold text-red-400">X</span> — 所属部署の問題では？技術開発室でやることではない（該当部署に報告を検討）</span>
             </div>
           </div>
         </div>
