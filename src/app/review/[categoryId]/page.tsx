@@ -86,7 +86,6 @@ export default function ReviewPage() {
   async function handleRate(rating: Rating) {
     if (!currentItem || !reviewerName || saving) return
 
-    // 既存の評価と同じ場合はスキップせず更新する
     setSaving(true)
     try {
       const res = await fetch('/api/evaluations', {
@@ -107,19 +106,18 @@ export default function ReviewPage() {
           item.id === currentItem.id ? { ...item, evaluation } : item
         )
       )
-
-      // 次へ自動遷移 (最後以外)
-      if (currentIndex < items.length - 1) {
-        setTimeout(() => {
-          setCurrentIndex((i) => i + 1)
-        }, 300)
-      } else {
-        setShowComplete(true)
-      }
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存に失敗しました')
     } finally {
       setSaving(false)
+    }
+  }
+
+  function handleNext() {
+    if (currentIndex < items.length - 1) {
+      setCurrentIndex((i) => i + 1)
+    } else {
+      setShowComplete(true)
     }
   }
 
@@ -153,7 +151,7 @@ export default function ReviewPage() {
     )
   }
 
-  if (showComplete || (ratedCount === items.length && items.length > 0)) {
+  if (showComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center space-y-6 animate-slide-up">
@@ -164,13 +162,16 @@ export default function ReviewPage() {
           </p>
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => setShowComplete(false)}
+              onClick={() => {
+                setShowComplete(false)
+                setCurrentIndex(0)
+              }}
               className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white py-3 rounded-xl font-semibold transition-colors"
             >
               回答を見直す
             </button>
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/?back=1')}
               className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors"
             >
               カテゴリ選択に戻る
@@ -234,6 +235,15 @@ export default function ReviewPage() {
           {saving && (
             <p className="text-center text-xs text-indigo-400 animate-pulse">保存中...</p>
           )}
+
+          {/* 次へボタン */}
+          <button
+            onClick={handleNext}
+            disabled={!currentItem?.evaluation || saving}
+            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-colors"
+          >
+            {currentIndex < items.length - 1 ? '次へ →' : '完了'}
+          </button>
         </div>
 
         {/* ナビゲーション */}

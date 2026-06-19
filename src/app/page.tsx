@@ -1,29 +1,40 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Category } from '@/lib/types'
 import CategorySelector from '@/components/CategorySelector'
 
-export default function HomePage() {
+function generateAnonymousId(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let id = ''
+  for (let i = 0; i < 6; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return `審査員#${id}`
+}
+
+function HomePage() {
   const router = useRouter()
-  const [reviewerName, setReviewerName] = useState('')
-  const [savedName, setSavedName] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const [reviewerId, setReviewerId] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [completedCounts, setCompletedCounts] = useState<Record<string, number>>({})
   const [totalCounts, setTotalCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [forceShowCategories, setForceShowCategories] = useState(false)
 
   useEffect(() => {
-    const name = localStorage.getItem('reviewerName')
-    if (name) {
-      setSavedName(name)
-      loadDashboard(name)
+    if (searchParams.get('back') === '1') setForceShowCategories(true)
+    const stored = localStorage.getItem('reviewerName')
+    if (stored) {
+      setReviewerId(stored)
+      loadDashboard(stored)
     }
   }, [])
 
-  async function loadDashboard(name: string) {
+  async function loadDashboard(id: string) {
     setLoading(true)
     setError(null)
     try {
@@ -37,7 +48,7 @@ export default function HomePage() {
 
       await Promise.all(
         cats.map(async (cat: Category) => {
-          const res = await fetch(`/api/responses?categoryId=${cat.id}&reviewerName=${encodeURIComponent(name)}`)
+          const res = await fetch(`/api/responses?categoryId=${cat.id}&reviewerName=${encodeURIComponent(id)}`)
           if (!res.ok) return
           const { responses, evaluations } = await res.json()
           totals[cat.id] = responses.length
@@ -55,25 +66,17 @@ export default function HomePage() {
   }
 
   function handleStart() {
-    const name = reviewerName.trim()
-    if (!name) return
-    localStorage.setItem('reviewerName', name)
-    setSavedName(name)
-    loadDashboard(name)
-  }
-
-  function handleChangeName() {
-    setSavedName(null)
-    setReviewerName('')
-    setCategories([])
-    localStorage.removeItem('reviewerName')
+    const id = generateAnonymousId()
+    localStorage.setItem('reviewerName', id)
+    setReviewerId(id)
+    loadDashboard(id)
   }
 
   function handleCategorySelect(categoryId: string) {
     router.push(`/review/${categoryId}`)
   }
 
-  if (!savedName) {
+  if (!reviewerId) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-md space-y-8 animate-slide-up">
@@ -86,28 +89,15 @@ export default function HomePage() {
           </div>
 
           <div className="bg-gray-900 rounded-3xl border border-gray-800 p-8 space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300" htmlFor="name">
-                あなたのお名前
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={reviewerName}
-                onChange={(e) => setReviewerName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleStart()}
-                placeholder="例: 山田 太郎"
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-
             <button
               onClick={handleStart}
-              disabled={!reviewerName.trim()}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-colors"
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors"
             >
               審査を開始する
             </button>
+            <p className="text-center text-xs text-gray-500">
+              名前入力は不要です。個人は特定されません。
+            </p>
           </div>
 
           <div className="bg-gray-900/50 rounded-2xl border border-gray-800 p-4 space-y-2">
@@ -129,17 +119,20 @@ export default function HomePage() {
     <div className="min-h-screen p-6">
       <div className="max-w-2xl mx-auto space-y-8 animate-slide-up">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black">アンケート審査</h1>
-            <p className="text-gray-400 text-sm mt-1">
-              こんにちは、<span className="text-white font-semibold">{savedName}</span> さん
-            </p>
-          </div>
+          <h1 className="text-2xl font-black">アンケート審査</h1>
           <button
-            onClick={handleChangeName}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors border border-gray-700 rounded-lg px-3 py-1.5"
+            onClick={() => {
+              if (!confirm('全ての回答をリセットして最初からやり直しますか？')) return
+              localStorage.removeItem('reviewerName')
+              setReviewerId(null)
+              setCategories([])
+              setCompletedCounts({})
+              setTotalCounts({})
+              setForceShowCategories(false)
+            }}
+            className="text-xs text-gray-600 hover:text-red-400 transition-colors border border-gray-800 hover:border-red-800 rounded-lg px-3 py-1.5"
           >
-            名前を変更
+            {reviewerId} · やり直す
           </button>
         </div>
 
@@ -151,48 +144,67 @@ export default function HomePage() {
 
         {loading ? (
           <div className="text-center py-20 text-gray-500">読み込み中...</div>
-        ) : (
-          <>
-            <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">
-                カテゴリを選択
-              </h2>
-              <CategorySelector
-                categories={categories}
-                completedCounts={completedCounts}
-                totalCounts={totalCounts}
-                onSelect={handleCategorySelect}
-              />
-            </div>
+        ) : (() => {
+          const totalAll = Object.values(totalCounts).reduce((a, b) => a + b, 0)
+          const completedAll = Object.values(completedCounts).reduce((a, b) => a + b, 0)
+          const allDone = totalAll > 0 && completedAll === totalAll
 
-            {Object.keys(totalCounts).length > 0 && (
-              <div className="bg-gray-900 rounded-2xl border border-gray-800 p-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">全体の進捗</span>
-                  <span className="font-bold">
-                    {Object.values(completedCounts).reduce((a, b) => a + b, 0)} /{' '}
-                    {Object.values(totalCounts).reduce((a, b) => a + b, 0)} 件
-                  </span>
-                </div>
-                <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${
-                        Object.values(totalCounts).reduce((a, b) => a + b, 0) > 0
-                          ? (Object.values(completedCounts).reduce((a, b) => a + b, 0) /
-                              Object.values(totalCounts).reduce((a, b) => a + b, 0)) *
-                            100
-                          : 0
-                      }%`,
-                    }}
-                  />
-                </div>
+          if (allDone && !forceShowCategories) {
+            return (
+              <div className="text-center space-y-4 py-12 animate-slide-up">
+                <div className="text-6xl">🎊</div>
+                <h2 className="text-2xl font-black">お疲れ様でした！</h2>
+                <p className="text-gray-400 text-sm">全 {totalAll} 件の審査が完了しました。</p>
+                <button
+                  onClick={() => setForceShowCategories(true)}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors border border-gray-700 rounded-lg px-4 py-2"
+                >
+                  見直す
+                </button>
               </div>
-            )}
-          </>
-        )}
+            )
+          }
+
+          return (
+            <>
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">
+                  カテゴリを選択
+                </h2>
+                <CategorySelector
+                  categories={categories}
+                  completedCounts={completedCounts}
+                  totalCounts={totalCounts}
+                  onSelect={handleCategorySelect}
+                />
+              </div>
+
+              {totalAll > 0 && (
+                <div className="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">全体の進捗</span>
+                    <span className="font-bold">{completedAll} / {totalAll} 件</span>
+                  </div>
+                  <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(completedAll / totalAll) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </>
+          )
+        })()}
       </div>
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense>
+      <HomePage />
+    </Suspense>
   )
 }
