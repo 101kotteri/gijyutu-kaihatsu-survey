@@ -116,7 +116,7 @@ export default function ResultsPage() {
     .sort((a, b) => b.counts.X - a.counts.X || calcScore(a.counts) - calcScore(b.counts))
 
   const summaryText = `審査員 ${reviewerCount} 名 · 回答 ${totalResponses} 件 · 評価済み ${totalEvaluations} 件${lastUpdated ? ` · ${lastUpdated.toLocaleTimeString('ja-JP')} 時点` : ''}`
-  const filterText = excludeReviewer ? `${EXCLUDED_REVIEWER_ID} を除外` : '全員の評価を集計'
+  const filterText = excludeReviewer ? '技術開発室のみ集計' : '全員の評価を集計'
 
   return (
     <>
@@ -199,7 +199,7 @@ export default function ResultsPage() {
                   excludeReviewer ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'
                 }`}
               >
-                {EXCLUDED_REVIEWER_ID} を除外
+                技術開発室
               </button>
             </div>
           </div>
