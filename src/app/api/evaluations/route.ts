@@ -37,3 +37,23 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ evaluation: data })
 }
+
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const reviewerName = searchParams.get('reviewerName')
+
+  if (!reviewerName) {
+    return NextResponse.json({ error: 'reviewerName is required' }, { status: 400 })
+  }
+
+  const { error } = await supabase
+    .from('evaluations')
+    .delete()
+    .eq('reviewer_name', reviewerName)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true })
+}

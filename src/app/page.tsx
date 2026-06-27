@@ -72,6 +72,22 @@ function HomePage() {
     loadDashboard(id)
   }
 
+  async function handleReset() {
+    if (!reviewerId) return
+    if (!confirm('これまでの回答を全て削除して、最初からやり直しますか？\nこの操作は取り消せません。')) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/evaluations?reviewerName=${encodeURIComponent(reviewerId)}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('リセットに失敗しました')
+      setForceShowCategories(false)
+      await loadDashboard(reviewerId)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'エラーが発生しました')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function handleCategorySelect(categoryId: string) {
     router.push(`/review/${categoryId}`)
   }
@@ -120,7 +136,12 @@ function HomePage() {
       <div className="max-w-2xl mx-auto space-y-8 animate-slide-up">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-black">アンケート審査</h1>
-          <span className="text-xs text-gray-600">{reviewerId}</span>
+          <button
+            onClick={handleReset}
+            className="text-xs text-gray-600 hover:text-red-400 transition-colors border border-gray-800 hover:border-red-800 rounded-lg px-3 py-1.5"
+          >
+            {reviewerId} · やり直す
+          </button>
         </div>
 
         {error && (
