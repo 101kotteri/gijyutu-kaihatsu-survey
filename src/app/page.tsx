@@ -120,20 +120,7 @@ function HomePage() {
       <div className="max-w-2xl mx-auto space-y-8 animate-slide-up">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-black">アンケート審査</h1>
-          <button
-            onClick={() => {
-              if (!confirm('全ての回答をリセットして最初からやり直しますか？')) return
-              localStorage.removeItem('reviewerName')
-              setReviewerId(null)
-              setCategories([])
-              setCompletedCounts({})
-              setTotalCounts({})
-              setForceShowCategories(false)
-            }}
-            className="text-xs text-gray-600 hover:text-red-400 transition-colors border border-gray-800 hover:border-red-800 rounded-lg px-3 py-1.5"
-          >
-            {reviewerId} · やり直す
-          </button>
+          <span className="text-xs text-gray-600">{reviewerId}</span>
         </div>
 
         {error && (
