@@ -3,12 +3,18 @@
 import { useEffect, useState } from 'react'
 import { Category, Rating } from '@/lib/types'
 
+interface RawEvaluation {
+  reviewer_name: string
+  rating: Rating
+  comment: string | null
+}
+
 interface ResponseResult {
   id: string
   response_text: string
   evaluationCount: number
   counts: Record<Rating, number>
-  evaluations: { reviewer_name: string; rating: Rating; comment: string | null }[]
+  evaluations: RawEvaluation[]
 }
 
 interface CategoryResult {
@@ -33,17 +39,32 @@ const RATING_TEXT: Record<Rating, string> = {
 }
 
 const RATINGS: Rating[] = ['S', 'A', 'B', 'C', 'X']
-const SCORE_MAP: Partial<Record<Rating, number>> = { A: 1, B: 0, C: -1, X: -2 }
+
+// 除外対象として比較する審査員ID
+const EXCLUDED_REVIEWER_ID = '審査員#LWG9CN'
 
 function calcScore(counts: Record<Rating, number>) {
-  return (counts.A * 1) + (counts.B * 0) + (counts.C * -1) + (counts.X * -2)
+  return (counts.S * 2) + (counts.A * 1) + (counts.B * 0) + (counts.C * -1) + (counts.X * -2)
 }
 
-function isAdopted(counts: Record<Rating, number>) {
-  return counts.S > 0
+// 指定の審査員を除外した上で件数を再計算する
+function recount(evaluations: RawEvaluation[], excludeReviewer: boolean) {
+  const filtered = excludeReviewer
+    ? evaluations.filter((e) => e.reviewer_name !== EXCLUDED_REVIEWER_ID)
+    : evaluations
+  const counts: Record<Rating, number> = { S: 0, A: 0, B: 0, C: 0, X: 0 }
+  for (const ev of filtered) counts[ev.rating]++
+  return { counts, evaluations: filtered, evaluationCount: filtered.length }
 }
 
-type Tab = 'category' | 'score'
+type Tab = 'category' | 'totalScore' | 'sRanking' | 'xRanking'
+
+const TAB_LABELS: Record<Tab, string> = {
+  category: 'カテゴリ別',
+  totalScore: '総合スコア',
+  sRanking: 'S評価ランキング',
+  xRanking: 'X評価ランキング',
+}
 
 export default function ResultsPage() {
   const [data, setData] = useState<CategoryResult[]>([])
@@ -52,6 +73,7 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [tab, setTab] = useState<Tab>('category')
+  const [excludeReviewer, setExcludeReviewer] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -77,16 +99,24 @@ export default function ResultsPage() {
   const totalResponses = data.reduce((a, c) => a + c.responses.length, 0)
   const totalEvaluations = data.reduce((a, c) => a + c.responses.reduce((b, r) => b + r.evaluationCount, 0), 0)
 
-  // スコアランキング用データ
+  // フィルタ適用済みの全回答データ (カテゴリ情報付き)
   const allResponses = data.flatMap(({ category, responses }) =>
-    responses.map((r) => ({ ...r, category }))
+    responses.map((r) => {
+      const { counts, evaluations, evaluationCount } = recount(r.evaluations, excludeReviewer)
+      return { ...r, category, counts, evaluations, evaluationCount }
+    })
   )
-  const adopted = allResponses.filter((r) => isAdopted(r.counts))
-  const scoring = allResponses
-    .filter((r) => !isAdopted(r.counts))
-    .sort((a, b) => calcScore(b.counts) - calcScore(a.counts))
+
+  const totalScoreRanking = [...allResponses].sort((a, b) => calcScore(b.counts) - calcScore(a.counts))
+  const sRanking = allResponses
+    .filter((r) => r.counts.S > 0)
+    .sort((a, b) => b.counts.S - a.counts.S || calcScore(b.counts) - calcScore(a.counts))
+  const xRanking = allResponses
+    .filter((r) => r.counts.X > 0)
+    .sort((a, b) => b.counts.X - a.counts.X || calcScore(a.counts) - calcScore(b.counts))
 
   const summaryText = `審査員 ${reviewerCount} 名 · 回答 ${totalResponses} 件 · 評価済み ${totalEvaluations} 件${lastUpdated ? ` · ${lastUpdated.toLocaleTimeString('ja-JP')} 時点` : ''}`
+  const filterText = excludeReviewer ? `${EXCLUDED_REVIEWER_ID} を除外` : '全員の評価を集計'
 
   return (
     <>
@@ -94,7 +124,6 @@ export default function ResultsPage() {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          .print-break { page-break-before: always; }
           body { background: white !important; color: black !important; }
           .bg-gray-950, .bg-gray-900, .bg-gray-800 { background: white !important; }
           .text-white, .text-gray-300, .text-gray-400 { color: #111 !important; }
@@ -129,15 +158,14 @@ export default function ResultsPage() {
 
         {/* 印刷時タイトル */}
         <div className="hidden print:block space-y-1 mb-6">
-          <h1 className="text-2xl font-black text-black">
-            {tab === 'category' ? '【カテゴリ別】審査結果シート' : '【スコアランキング】審査結果シート'}
-          </h1>
+          <h1 className="text-2xl font-black text-black">【{TAB_LABELS[tab]}】審査結果シート</h1>
           <p className="text-gray-600 text-xs">{summaryText}</p>
+          {tab !== 'category' && <p className="text-gray-600 text-xs">{filterText}</p>}
         </div>
 
         {/* タブ */}
-        <div className="no-print flex gap-2 border-b border-gray-800 pb-0">
-          {([['category', 'カテゴリ別'], ['score', 'スコアランキング']] as [Tab, string][]).map(([key, label]) => (
+        <div className="no-print flex gap-2 border-b border-gray-800 pb-0 flex-wrap">
+          {(Object.keys(TAB_LABELS) as Tab[]).map((key) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -147,10 +175,36 @@ export default function ResultsPage() {
                   : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              {label}
+              {TAB_LABELS[key]}
             </button>
           ))}
         </div>
+
+        {/* 審査員フィルタ (カテゴリ別以外で表示) */}
+        {tab !== 'category' && (
+          <div className="no-print flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
+            <span className="text-xs text-gray-400">集計対象:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setExcludeReviewer(false)}
+                className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                  !excludeReviewer ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                全員
+              </button>
+              <button
+                onClick={() => setExcludeReviewer(true)}
+                className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                  excludeReviewer ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                {EXCLUDED_REVIEWER_ID} を除外
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="hidden print:block text-xs text-gray-600 -mt-4">{tab !== 'category' && filterText}</div>
 
         {/* ===== カテゴリ別ビュー ===== */}
         {tab === 'category' && (
@@ -171,36 +225,33 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* ===== スコアランキングビュー ===== */}
-        {tab === 'score' && (
-          <div className="space-y-10">
-            {/* 採用 */}
-            {adopted.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 border-b border-yellow-800 pb-3">
-                  <span className="text-xl font-black text-yellow-400">★ 採用</span>
-                  <span className="text-xs text-gray-500">S評価あり — {adopted.length} 件</span>
-                </div>
-                <div className="space-y-3">
-                  {adopted.map((r, idx) => (
-                    <ScoreCard key={r.id} r={r} rank={idx + 1} adopted />
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* ===== 総合スコアランキング ===== */}
+        {tab === 'totalScore' && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">S=+2 / A=+1 / B=0 / C=-1 / X=-2 で合計 · {totalScoreRanking.length} 件</p>
+            {totalScoreRanking.map((r, idx) => (
+              <ScoreCard key={r.id} r={r} rank={idx + 1} highlightRating={null} />
+            ))}
+          </div>
+        )}
 
-            {/* スコアランキング */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
-                <span className="text-xl font-black text-gray-300">スコア順</span>
-                <span className="text-xs text-gray-500">A=+1 / B=0 / C=-1 / X=-2 · {scoring.length} 件</span>
-              </div>
-              <div className="space-y-3">
-                {scoring.map((r, idx) => (
-                  <ScoreCard key={r.id} r={r} rank={idx + 1} adopted={false} />
-                ))}
-              </div>
-            </div>
+        {/* ===== S評価ランキング ===== */}
+        {tab === 'sRanking' && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">S評価が1件以上ある回答を、S件数の多い順に表示 · {sRanking.length} 件</p>
+            {sRanking.map((r, idx) => (
+              <ScoreCard key={r.id} r={r} rank={idx + 1} highlightRating="S" />
+            ))}
+          </div>
+        )}
+
+        {/* ===== X評価ランキング ===== */}
+        {tab === 'xRanking' && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">X評価が1件以上ある回答を、X件数の多い順に表示（他部署への報告検討用） · {xRanking.length} 件</p>
+            {xRanking.map((r, idx) => (
+              <ScoreCard key={r.id} r={r} rank={idx + 1} highlightRating="X" />
+            ))}
           </div>
         )}
       </div>
@@ -244,25 +295,34 @@ function ResponseCard({ r, idx }: { r: ResponseResult; idx: number }) {
   )
 }
 
-function ScoreCard({ r, rank, adopted }: { r: ResponseResult & { category: Category }; rank: number; adopted: boolean }) {
+function ScoreCard({
+  r,
+  rank,
+  highlightRating,
+}: {
+  r: ResponseResult & { category: Category }
+  rank: number
+  highlightRating: Rating | null
+}) {
   const score = calcScore(r.counts)
   return (
-    <div className={`bg-gray-900 rounded-2xl border p-5 space-y-4 ${adopted ? 'border-yellow-800/60' : 'border-gray-800'}`}>
+    <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-4">
       <div className="flex gap-4 items-start">
-        {/* ランク */}
-        <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${adopted ? 'bg-yellow-400/20 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>
-          {adopted ? '★' : rank}
+        <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg bg-gray-800 text-gray-400">
+          {rank}
         </div>
 
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-600 font-medium">{r.category.column_key}</span>
-            {!adopted && (
-              <span className={`text-sm font-black ${score > 0 ? 'text-emerald-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                {score > 0 ? `+${score}` : score}点
+            <span className={`text-sm font-black ${score > 0 ? 'text-emerald-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+              {score > 0 ? `+${score}` : score}点
+            </span>
+            {highlightRating && (
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${RATING_COLORS[highlightRating]}`}>
+                {highlightRating} {r.counts[highlightRating]}件
               </span>
             )}
-            {adopted && <span className="text-xs font-bold text-yellow-400">採用</span>}
           </div>
           <p className="text-white text-sm leading-relaxed">{r.response_text}</p>
         </div>
@@ -275,11 +335,7 @@ function ScoreCard({ r, rank, adopted }: { r: ResponseResult & { category: Categ
               {rating} {r.counts[rating]}
             </span>
           ))}
-          {!adopted && (
-            <span className="text-xs text-gray-600">
-              ({r.evaluationCount}名評価)
-            </span>
-          )}
+          <span className="text-xs text-gray-600">({r.evaluationCount}名評価)</span>
         </div>
       )}
 
@@ -290,7 +346,7 @@ function ScoreCard({ r, rank, adopted }: { r: ResponseResult & { category: Categ
   )
 }
 
-function Comments({ evaluations }: { evaluations: ResponseResult['evaluations'] }) {
+function Comments({ evaluations }: { evaluations: RawEvaluation[] }) {
   const withComments = evaluations.filter((e) => e.comment)
   if (withComments.length === 0) return null
   return (
