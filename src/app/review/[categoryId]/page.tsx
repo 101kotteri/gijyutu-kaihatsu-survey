@@ -83,16 +83,15 @@ export default function ReviewPage() {
     }
   }, [currentIndex, currentItem])
 
-  async function handleRate(rating: Rating) {
-    if (!currentItem || !reviewerName || saving) return
-
+  async function saveEvaluation(rating: Rating, targetItem: ResponseWithEval) {
+    if (!reviewerName) return
     setSaving(true)
     try {
       const res = await fetch('/api/evaluations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          response_id: currentItem.id,
+          response_id: targetItem.id,
           reviewer_name: reviewerName,
           rating,
           comment: comment.trim() || null,
@@ -100,10 +99,9 @@ export default function ReviewPage() {
       })
       if (!res.ok) throw new Error('評価の保存に失敗しました')
       const { evaluation } = await res.json()
-
       setItems((prev) =>
         prev.map((item) =>
-          item.id === currentItem.id ? { ...item, evaluation } : item
+          item.id === targetItem.id ? { ...item, evaluation } : item
         )
       )
     } catch (e) {
@@ -113,7 +111,20 @@ export default function ReviewPage() {
     }
   }
 
-  function handleNext() {
+  async function handleRate(rating: Rating) {
+    if (!currentItem || saving) return
+    await saveEvaluation(rating, currentItem)
+  }
+
+  async function saveCommentIfChanged() {
+    if (!currentItem?.evaluation) return
+    const savedComment = currentItem.evaluation.comment ?? ''
+    if (comment.trim() === savedComment) return
+    await saveEvaluation(currentItem.evaluation.rating, currentItem)
+  }
+
+  async function handleNext() {
+    await saveCommentIfChanged()
     if (currentIndex < items.length - 1) {
       setCurrentIndex((i) => i + 1)
     } else {
@@ -121,8 +132,9 @@ export default function ReviewPage() {
     }
   }
 
-  function goTo(index: number) {
+  async function goTo(index: number) {
     if (index < 0 || index >= items.length) return
+    await saveCommentIfChanged()
     setCurrentIndex(index)
     setShowComplete(false)
   }
