@@ -22,8 +22,16 @@ export async function GET(request: NextRequest) {
     .from('evaluations')
     .select('reviewer_name, response_id')
 
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { data: recentComments } = await supabase
+    .from('evaluations')
+    .select('id')
+    .not('comment', 'is', null)
+    .gt('updated_at', since24h)
+
   const reviewerCount = new Set((evaluations ?? []).map((e) => e.reviewer_name)).size
   const totalEvaluations = evaluations?.length ?? 0
+  const recentCommentCount = recentComments?.length ?? 0
 
   const categoryByResponseId = new Map((responses ?? []).map((r) => [r.id, r.category_id]))
   const countByCategory: Record<string, number> = {}
@@ -41,11 +49,16 @@ export async function GET(request: NextRequest) {
     .map(([key, count]) => `${key}: ${count}件`)
     .join(' / ')
 
+  const commentLine = recentCommentCount > 0
+    ? `💬 本日のコメント更新: *${recentCommentCount}件*`
+    : `💬 本日のコメント更新: なし`
+
   const message = {
     text: [
       `📊 *審査進捗レポート* (${timeStr})`,
       `評価済み合計: *${totalEvaluations}件* (参加中の審査員: ${reviewerCount}名)`,
       categoryLines,
+      commentLine,
     ].join('\n'),
   }
 
