@@ -122,7 +122,7 @@ export default function ResultsPage() {
     <>
       {/* 印刷用スタイル */}
       <style>{`
-        @page { size: A4 portrait; margin: 8mm 4mm 2mm 4mm; }
+        @page { size: A4 portrait; margin: 15mm 4mm 1mm 4mm; }
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; color: black !important; font-size: 14px !important; }
