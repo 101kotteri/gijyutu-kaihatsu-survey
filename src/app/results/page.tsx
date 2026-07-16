@@ -112,7 +112,7 @@ export default function ResultsPage() {
     .filter((r) => r.counts.S > 0)
     .sort((a, b) => b.counts.S - a.counts.S || calcScore(b.counts) - calcScore(a.counts))
   const xRanking = allResponses
-    .filter((r) => r.counts.X > 0)
+    .filter((r) => r.counts.X >= 3)
     .sort((a, b) => b.counts.X - a.counts.X || calcScore(a.counts) - calcScore(b.counts))
 
   const summaryText = `審査員 ${reviewerCount} 名 · 回答 ${totalResponses} 件 · 評価済み ${totalEvaluations} 件${lastUpdated ? ` · ${lastUpdated.toLocaleTimeString('ja-JP')} 時点` : ''}`
@@ -248,7 +248,7 @@ export default function ResultsPage() {
         {/* ===== X評価ランキング ===== */}
         {tab === 'xRanking' && (
           <div className="space-y-3">
-            <p className="text-xs text-gray-500">X評価が1件以上ある回答を、X件数の多い順に表示（他部署への報告検討用） · {xRanking.length} 件</p>
+            <p className="text-xs text-gray-500">X評価が3件以上ある回答を、X件数の多い順に表示（他部署への報告検討用） · {xRanking.length} 件</p>
             {xRanking.map((r, idx) => (
               <ScoreCard key={r.id} r={r} rank={idx + 1} highlightRating="X" />
             ))}
