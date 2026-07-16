@@ -112,8 +112,8 @@ export default function ResultsPage() {
     .filter((r) => r.counts.S > 0)
     .sort((a, b) => b.counts.S - a.counts.S || calcScore(b.counts) - calcScore(a.counts))
   const xRanking = allResponses
-    .filter((r) => r.counts.X >= 3)
-    .sort((a, b) => b.counts.X - a.counts.X || calcScore(a.counts) - calcScore(b.counts))
+    .filter((r) => r.counts.X >= 1)
+    .sort((a, b) => b.counts.X - a.counts.X)
 
   const summaryText = `審査員 ${reviewerCount} 名 · 回答 ${totalResponses} 件 · 評価済み ${totalEvaluations} 件${lastUpdated ? ` · ${lastUpdated.toLocaleTimeString('ja-JP')} 時点` : ''}`
   const filterText = excludeReviewer ? '技術開発室のみ集計' : '全員の評価を集計'
@@ -275,7 +275,7 @@ export default function ResultsPage() {
         {/* ===== X評価ランキング ===== */}
         {tab === 'xRanking' && (
           <div className="space-y-3">
-            <p className="text-xs text-gray-500">X評価が3件以上ある回答を、X件数の多い順に表示（他部署への報告検討用） · {xRanking.length} 件</p>
+            <p className="text-xs text-gray-500">X評価があった回答をX件数の多い順に表示 · {xRanking.length} 件</p>
             {xRanking.map((r, idx) => (
               <ScoreCard key={r.id} r={r} rank={idx + 1} highlightRating="X" />
             ))}
@@ -342,9 +342,11 @@ function ScoreCard({
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-600 font-medium">{r.category.column_key}</span>
-            <span className={`text-sm font-black ${score > 0 ? 'text-emerald-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-              {score > 0 ? `+${score}` : score}点
-            </span>
+            {highlightRating !== 'X' && (
+              <span className={`text-sm font-black ${score > 0 ? 'text-emerald-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                {score > 0 ? `+${score}` : score}点
+              </span>
+            )}
             {highlightRating && (
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${RATING_COLORS[highlightRating]}`}>
                 {highlightRating} {r.counts[highlightRating]}件
