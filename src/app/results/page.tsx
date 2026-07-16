@@ -44,7 +44,7 @@ const RATINGS: Rating[] = ['S', 'A', 'B', 'C', 'X']
 const EXCLUDED_REVIEWER_ID = '審査員#LWG9CN'
 
 function calcScore(counts: Record<Rating, number>) {
-  return (counts.S * 2) + (counts.A * 1) + (counts.B * 0) + (counts.C * -1) + (counts.X * -2)
+  return (counts.S * 2) + (counts.A * 1) + (counts.B * 0) + (counts.C * -1)
 }
 
 // 指定の審査員を除外した上で件数を再計算する
@@ -255,7 +255,7 @@ export default function ResultsPage() {
         {/* ===== 総合スコアランキング ===== */}
         {tab === 'totalScore' && (
           <div className="space-y-3">
-            <p className="text-xs text-gray-500">S=+2 / A=+1 / B=0 / C=-1 / X=-2 で合計 · {totalScoreRanking.length} 件</p>
+            <p className="text-xs text-gray-500">S=+2 / A=+1 / B=0 / C=-1（X除く）で合計 · {totalScoreRanking.length} 件</p>
             {totalScoreRanking.map((r, idx) => (
               <ScoreCard key={r.id} r={r} rank={idx + 1} highlightRating={null} />
             ))}
@@ -357,11 +357,14 @@ function ScoreCard({
 
       {r.evaluationCount > 0 && (
         <div className="flex gap-2 flex-wrap pl-14">
-          {RATINGS.map((rating) => r.counts[rating] > 0 && (
-            <span key={rating} className={`text-xs font-bold px-2 py-0.5 rounded-full ${RATING_COLORS[rating]}`}>
-              {rating} {r.counts[rating]}
-            </span>
-          ))}
+          {RATINGS.map((rating) => {
+            if (rating === 'X' && highlightRating === null) return null
+            return r.counts[rating] > 0 && (
+              <span key={rating} className={`text-xs font-bold px-2 py-0.5 rounded-full ${RATING_COLORS[rating]}`}>
+                {rating} {r.counts[rating]}
+              </span>
+            )
+          })}
           <span className="text-xs text-gray-600">({r.evaluationCount}名評価)</span>
         </div>
       )}
