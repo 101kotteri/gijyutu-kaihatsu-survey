@@ -189,7 +189,6 @@ export default function ResultsPage() {
         <div className="hidden print:block space-y-1 mb-6">
           <h1 className="text-2xl font-black text-black">【{TAB_LABELS[tab]}】審査結果シート</h1>
           <p className="text-gray-600 text-xs">{summaryText}</p>
-          {tab !== 'category' && <p className="text-gray-600 text-xs">{filterText}</p>}
         </div>
 
         {/* タブ */}
@@ -233,7 +232,6 @@ export default function ResultsPage() {
             </div>
           </div>
         )}
-        <div className="hidden print:block text-xs text-gray-600 -mt-4">{tab !== 'category' && filterText}</div>
 
         {/* ===== カテゴリ別ビュー ===== */}
         {tab === 'category' && (
