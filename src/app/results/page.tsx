@@ -57,13 +57,14 @@ function recount(evaluations: RawEvaluation[], excludeReviewer: boolean) {
   return { counts, evaluations: filtered, evaluationCount: filtered.length }
 }
 
-type Tab = 'category' | 'totalScore' | 'sRanking' | 'xRanking'
+type Tab = 'category' | 'totalScore' | 'sRanking' | 'xRanking' | 'criteria'
 
 const TAB_LABELS: Record<Tab, string> = {
   category: 'カテゴリ別',
   totalScore: '総合スコア',
   sRanking: 'S評価ランキング',
   xRanking: 'X評価ランキング',
+  criteria: '評価基準',
 }
 
 export default function ResultsPage() {
@@ -278,6 +279,27 @@ export default function ResultsPage() {
             <p className="text-xs text-gray-500">X評価があった回答をX件数の多い順に表示 · {xRanking.length} 件</p>
             {xRanking.map((r, idx) => (
               <ScoreCard key={r.id} r={r} rank={idx + 1} highlightRating="X" />
+            ))}
+          </div>
+        )}
+
+        {/* ===== 評価基準 ===== */}
+        {tab === 'criteria' && (
+          <div className="space-y-3 max-w-xl">
+            {([
+              { rating: 'S', label: 'S', desc: '是非実現したい・自分1人でも取り組みたい・採用決定', color: 'text-yellow-400', bg: 'bg-yellow-400 text-yellow-900' },
+              { rating: 'A', label: 'A', desc: '良い・多少の課題はあっても前向きに検討', color: 'text-emerald-400', bg: 'bg-emerald-500 text-white' },
+              { rating: 'B', label: 'B', desc: 'どちらでもいい・意味がわからない・興味がない', color: 'text-blue-400', bg: 'bg-blue-500 text-white' },
+              { rating: 'C', label: 'C', desc: 'やめたほうがいい・本人の問題・無理', color: 'text-orange-400', bg: 'bg-orange-500 text-white' },
+              { rating: 'X', label: 'X', desc: '所属部署の問題では？技術開発室でやることではない', color: 'text-red-400', bg: 'bg-red-600 text-white' },
+            ] as const).map(({ label, desc, color, bg }) => (
+              <div key={label} className="print-card bg-gray-900 rounded-2xl border border-gray-800 p-5 flex items-start gap-4">
+                <span className={`shrink-0 font-black text-2xl w-10 text-center ${color}`}>{label}</span>
+                <div className="space-y-1">
+                  <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${bg}`}>{label}</span>
+                  <p className="text-white text-sm leading-relaxed">{desc}</p>
+                </div>
+              </div>
             ))}
           </div>
         )}
