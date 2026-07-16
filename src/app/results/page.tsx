@@ -122,14 +122,43 @@ export default function ResultsPage() {
     <>
       {/* 印刷用スタイル */}
       <style>{`
+        @page { size: A4 portrait; margin: 12mm; }
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; color: black !important; }
+          body { background: white !important; color: black !important; font-size: 11px !important; }
           .bg-gray-950, .bg-gray-900, .bg-gray-800 { background: white !important; }
           .text-white, .text-gray-300, .text-gray-400 { color: #111 !important; }
-          .border-gray-800, .border-gray-700 { border-color: #ddd !important; }
-          .text-gray-500, .text-gray-600 { color: #666 !important; }
-          .text-gray-700 { color: #999 !important; }
+          .border-gray-800, .border-gray-700 { border-color: #ccc !important; }
+          .text-gray-500, .text-gray-600 { color: #555 !important; }
+          .text-gray-700 { color: #888 !important; }
+
+          /* カードが途中で切れないようにする */
+          .print-card { break-inside: avoid; page-break-inside: avoid; }
+
+          /* カードの余白を縮小 */
+          .print-card { padding: 6px 8px !important; margin-bottom: 4px !important; }
+          .print-card p, .print-card span { font-size: 10px !important; line-height: 1.4 !important; }
+
+          /* カテゴリ見出しも切れないように */
+          .print-section-header { break-after: avoid; page-break-after: avoid; }
+
+          /* スペースを縮小 */
+          .space-y-10 > * + * { margin-top: 16px !important; }
+          .space-y-4 > * + * { margin-top: 4px !important; }
+          .space-y-3 > * + * { margin-top: 4px !important; }
+          .space-y-2 > * + * { margin-top: 2px !important; }
+          .p-5 { padding: 6px 8px !important; }
+          .p-6 { padding: 6px 8px !important; }
+          .gap-4 { gap: 6px !important; }
+          .gap-3 { gap: 4px !important; }
+          .gap-2 { gap: 2px !important; }
+          .h-6 { height: 12px !important; }
+          .w-10, .h-10 { width: 24px !important; height: 24px !important; font-size: 12px !important; }
+          .pl-14 { padding-left: 28px !important; }
+          .text-3xl { font-size: 18px !important; }
+          .text-2xl { font-size: 14px !important; }
+          .text-sm { font-size: 10px !important; }
+          .text-xs { font-size: 9px !important; }
         }
       `}</style>
 
@@ -211,7 +240,7 @@ export default function ResultsPage() {
           <div className="space-y-10">
             {data.map(({ category, responses }) => (
               <div key={category.id} className="space-y-4">
-                <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+                <div className="print-section-header flex items-center gap-3 border-b border-gray-800 pb-3">
                   <span className="text-3xl font-black text-gray-700">{category.column_key}</span>
                   <h2 className="text-sm font-semibold text-gray-300">{category.name}</h2>
                 </div>
@@ -261,7 +290,7 @@ export default function ResultsPage() {
 
 function ResponseCard({ r, idx }: { r: ResponseResult; idx: number }) {
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-4">
+    <div className="print-card bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-4">
       <div className="flex gap-3">
         <span className="text-xs text-gray-600 mt-0.5 shrink-0">#{idx + 1}</span>
         <p className="text-white text-sm leading-relaxed">{r.response_text}</p>
@@ -306,7 +335,7 @@ function ScoreCard({
 }) {
   const score = calcScore(r.counts)
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-4">
+    <div className="print-card bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-4">
       <div className="flex gap-4 items-start">
         <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg bg-gray-800 text-gray-400">
           {rank}
