@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Category } from '@/lib/types'
 import CategorySelector from '@/components/CategorySelector'
 
+const REVIEW_CLOSED = true
+
 function generateAnonymousId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let id = ''
@@ -26,6 +28,7 @@ function HomePage() {
   const [forceShowCategories, setForceShowCategories] = useState(false)
 
   useEffect(() => {
+    if (REVIEW_CLOSED) return
     if (searchParams.get('back') === '1') setForceShowCategories(true)
     const stored = localStorage.getItem('reviewerName')
     if (stored) {
@@ -90,6 +93,20 @@ function HomePage() {
 
   function handleCategorySelect(categoryId: string) {
     router.push(`/review/${categoryId}`)
+  }
+
+  if (REVIEW_CLOSED) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-md text-center space-y-4 animate-slide-up">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-800 mb-4">
+            <span className="text-2xl">🔒</span>
+          </div>
+          <h1 className="text-2xl font-black">審査期間は終了しました</h1>
+          <p className="text-gray-500 text-sm">ご参加いただきありがとうございました。</p>
+        </div>
+      </div>
+    )
   }
 
   if (!reviewerId) {
